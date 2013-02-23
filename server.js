@@ -7,10 +7,20 @@ var io = require('socket.io').listen(server);
 
 var geomonster = require('geomonster');
 
+geomonster.initializeMonsterPopulation(10000);
+
 server.listen(parseInt(process.argv[2], 10) || 80);
 
 app.get('/', function (req, res) {
   res.sendfile(__dirname + '/public/index.html');
+});
+
+app.get('/all-monsters', function (req, res) {
+	res.send(geomonster.getAllMonsters());
+});
+
+app.get('/monster-types', function (req, res) {
+	res.send(geomonster.getMonsterTypes());
 });
 
 app.use('/', express.static(__dirname + '/public'));
@@ -21,8 +31,3 @@ io.sockets.on('connection', function (socket) {
     console.log(data);
   });
 });
-
-
-
-geomonster.initializeMonsterPopulation(10000);
-console.log(geomonster.getAllMonsters());
