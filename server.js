@@ -10,7 +10,7 @@ var geomonster = require('geomonster');
 geomonster
 	.setSockets(io)
 	.initializeMonsterPopulation(1000)
-	.initializeMonsterMovement();
+	.initializeMonsterMovement(parseInt(process.argv[3], 10) || 1000);
 
 server.listen(parseInt(process.argv[2], 10) || 80);
 
