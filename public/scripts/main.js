@@ -7,6 +7,17 @@ var MAXIMUM_AGE = 100; // miliseconds
 var TIMEOUT = 300000;
 var HIGHACCURACY = true;
 
+var user_id = sessionStorage.getItem("user_id");
+if (!user_id) {
+	user_id = Math.floor(Math.random() * 900000 + 100000) + ''; // Random 6 digit number
+	sessionStorage.setItem("user_id", user_id);
+}
+
+console.log("My user_id is " + user_id);
+
+var socket = io.connect();
+var markers = [];
+
 function getGeoLocation() {
 	try {
 		if( !! navigator.geolocation ) return navigator.geolocation;
@@ -16,10 +27,17 @@ function getGeoLocation() {
 	}
 }
 
-function show_map(position) {
+function positionUpdate(position) {
 	var lat = position.coords.latitude;
 	var lon = position.coords.longitude;
 	var latlng = new google.maps.LatLng(lat, lon);
+	if (socket) {
+		socket.emit('location', {
+			lat: position.coords.latitude,
+			lon: position.coords.longitude,
+			user_id: user_id,
+		});
+	}
 
 	if(map) {
 		map.panTo(latlng);
@@ -68,7 +86,7 @@ function stopWatching() {
 }
 
 function startWatching() {
-	watchID = geo.watchPosition(show_map, geo_error, {
+	watchID = geo.watchPosition(positionUpdate, geo_error, {
 		enableHighAccuracy: HIGHACCURACY,
 		maximumAge: MAXIMUM_AGE,
 		timeout: TIMEOUT
@@ -83,8 +101,6 @@ window.onload = function() {
 	}
 }
 
-var socket = io.connect();
-var markers = [];
 var firstTime = true;
 socket.on('monster-move', function (monsters) {
  for(var index in monsters) {
