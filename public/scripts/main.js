@@ -7,6 +7,8 @@ var MAXIMUM_AGE = 100; // miliseconds
 var TIMEOUT = 300000;
 var HIGHACCURACY = true;
 
+var monsterTypes = {};
+
 var user_id = sessionStorage.getItem("user_id");
 if (!user_id) {
 	user_id = Math.floor(Math.random() * 900000 + 100000) + ''; // Random 6 digit number
@@ -14,6 +16,17 @@ if (!user_id) {
 }
 $(function() {
 	$('#user_id').text(user_id);
+	$.ajax({
+	  type: 'GET',
+	  url: './monster-types',
+	  dataType: 'json',
+	  success: function(data){
+	  	monsterTypes = data;
+	  },
+	  error: function(xhr, type){
+		alert('Ajax error!')
+	  }
+	});
 });
 
 console.log("My user_id is " + user_id);
@@ -123,13 +136,13 @@ socket.on('monster-move', function (monsters) {
 		  monster_markers[index] = new google.maps.Marker({
 				position: myLatlng,
 				map: map,
-				title: monster.type.toString(),
+				title: monsterTypes[monster.type].name,
 				icon: './images/monsters/' + monster.type + '.png'
 		  });
 		  (function(index){
-			  google.maps.event.addListener(markers[index], 'click', function(asdf) {
-				infoWindow.setContent(markers[index].getTitle());
-				infoWindow.open(map, markers[index]);
+			  google.maps.event.addListener(monster_markers[index], 'click', function(asdf) {
+				infoWindow.setContent(monster_markers[index].getTitle());
+				infoWindow.open(map, monster_markers[index]);
 			  });
 		  })(index)
 	  } else {
