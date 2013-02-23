@@ -26,3 +26,13 @@ button {
 	font-family: sans-serif;
 	border-radius: 4px;
 }
+#position {
+	position: absolute;
+	bottom: 10px;
+	left: 10px;
+	z-index: 99999;
+	background-color: white;
+	padding: 4px;
+	font-family: sans-serif;
+	border-radius: 4px;
+}

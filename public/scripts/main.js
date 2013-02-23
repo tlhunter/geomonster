@@ -34,6 +34,7 @@ function getGeoLocation() {
 function positionUpdate(position) {
 	var lat = position.coords.latitude;
 	var lon = position.coords.longitude;
+	$('#position').text(lat + ', ' + lon);
 	console.log("My position has changed to", position.coords.latitude, position.coords.longitude);
 	var latlng = new google.maps.LatLng(lat, lon);
 	if (socket) {
@@ -86,6 +87,7 @@ function geo_error(error) {
 }
 
 function stopWatching() {
+	console.log("Stop Watching");
 	if(watchID) geo.clearWatch(watchID);
 	watchID = null;
 }
@@ -98,13 +100,14 @@ function startWatching() {
 	});
 }
 
-window.onload = function() {
-	if((geo = getGeoLocation())) {
+$(function() {
+	console.log("Start Watching");
+	if (geo = getGeoLocation()) {
 		startWatching();
 	} else {
 		alert('Geolocation not supported.')
 	}
-}
+});
 
 var firstTime = true;
 socket.on('monster-move', function (monsters) {
