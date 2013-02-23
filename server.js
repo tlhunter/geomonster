@@ -3,13 +3,13 @@
 var express = require('express');
 var app = express();
 var server = require('http').createServer(app)
-var io = require('socket.io').listen(server);
+var io = require('socket.io').listen(server, { log: false});
 
 var geomonster = require('geomonster');
 
 geomonster
 	.setSockets(io)
-	.initializeMonsterPopulation(1000)
+	.initializeMonsterPopulation(10000)
 	.initializeMonsterMovement();
 
 server.listen(parseInt(process.argv[2], 10) || 80);
