@@ -101,7 +101,6 @@
 	 var markers = [];
 	 var firstTime = true;
 	 socket.on('monster-move', function (monsters) {
-		 console.log(monsters);
 		 for(var index in monsters) {
 		     var monster = monsters[index];
 			  var myLatlng = new google.maps.LatLng(monster.coords.lat,monster.coords.lon);
