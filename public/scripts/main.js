@@ -12,11 +12,15 @@ if (!user_id) {
 	user_id = Math.floor(Math.random() * 900000 + 100000) + ''; // Random 6 digit number
 	sessionStorage.setItem("user_id", user_id);
 }
+$(function() {
+	$('#user_id').text(user_id);
+});
 
 console.log("My user_id is " + user_id);
 
 var socket = io.connect();
-var markers = [];
+var monster_markers = [];
+var players = {};
 
 function getGeoLocation() {
 	try {
@@ -30,6 +34,7 @@ function getGeoLocation() {
 function positionUpdate(position) {
 	var lat = position.coords.latitude;
 	var lon = position.coords.longitude;
+	$('#position').text(lat + ', ' + lon);
 	console.log("My position has changed to", position.coords.latitude, position.coords.longitude);
 	var latlng = new google.maps.LatLng(lat, lon);
 	if (socket) {
@@ -82,6 +87,7 @@ function geo_error(error) {
 }
 
 function stopWatching() {
+	console.log("Stop Watching");
 	if(watchID) geo.clearWatch(watchID);
 	watchID = null;
 }
@@ -94,13 +100,14 @@ function startWatching() {
 	});
 }
 
-window.onload = function() {
-	if((geo = getGeoLocation())) {
+$(function() {
+	console.log("Start Watching");
+	if (geo = getGeoLocation()) {
 		startWatching();
 	} else {
 		alert('Geolocation not supported.')
 	}
-}
+});
 
 var firstTime = true;
 var infoWindow = new google.maps.InfoWindow(
@@ -113,7 +120,7 @@ socket.on('monster-move', function (monsters) {
 	 var monster = monsters[index];
 	  var myLatlng = new google.maps.LatLng(monster.coords.lat,monster.coords.lon);
 	  if(firstTime) {
-		  markers[index] = new google.maps.Marker({
+		  monster_markers[index] = new google.maps.Marker({
 				position: myLatlng,
 				map: map,
 				title: monster.type.toString(),
@@ -126,10 +133,30 @@ socket.on('monster-move', function (monsters) {
 			  });
 		  })(index)
 	  } else {
-			markers[index].setPosition(myLatlng);
+			monster_markers[index].setPosition(myLatlng);
 	  }
  }
  firstTime = false;
+});
+
+socket.on('player-move', function(newPlayer) {
+	if (newPlayer.user_id == user_id) return; // don't care about myself
+	console.log("Some player has moved", newPlayer);
+	var myLatlng = new google.maps.LatLng(newPlayer.lat, newPlayer.lon);
+	if (typeof players[newPlayer.user_id] === 'undefined') {
+		console.log("I've never seen this player before.");
+		players[newPlayer.user_id] = newPlayer;
+		// add marker
+		players[newPlayer.user_id].marker = new google.maps.Marker({
+		  	position: myLatlng,
+		  	map: map,
+		  	icon: './images/players/user.png'
+		});
+	} else {
+		players[newPlayer.user_id].lat = newPlayer.lat;
+		players[newPlayer.user_id].lon = newPlayer.lon;
+		players[newPlayer.user_id].marker.setPosition(myLatlng);
+	}
 });
 
 function center() {
