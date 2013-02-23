@@ -116,7 +116,7 @@ socket.on('monster-move', function (monsters) {
 		  markers[index] = new google.maps.Marker({
 				position: myLatlng,
 				map: map,
-				title: 'Billy',
+				title: monster.type.toString(),
 				icon: './images/monsters/' + monster.type + '.png'
 		  });
 		  (function(index){
