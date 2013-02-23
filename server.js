@@ -7,7 +7,9 @@ var io = require('socket.io').listen(server);
 
 var geomonster = require('geomonster');
 
-geomonster.initializeMonsterPopulation(10000);
+geomonster
+	.initializeMonsterPopulation(1000)
+	.initializeMonsterMovement();
 
 server.listen(parseInt(process.argv[2], 10) || 80);
 
