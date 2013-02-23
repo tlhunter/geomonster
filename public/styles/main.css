@@ -16,3 +16,13 @@ button {
 	right: 10px;
 	z-index: 99999;
 }
+#user_id {
+	position: absolute;
+	top: 10px;
+	left: 10px;
+	z-index: 99999;
+	background-color: white;
+	padding: 4px;
+	font-family: sans-serif;
+	border-radius: 4px;
+}

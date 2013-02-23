@@ -12,6 +12,9 @@ if (!user_id) {
 	user_id = Math.floor(Math.random() * 900000 + 100000) + ''; // Random 6 digit number
 	sessionStorage.setItem("user_id", user_id);
 }
+$(function() {
+	$('#user_id').text(user_id);
+});
 
 console.log("My user_id is " + user_id);
 
@@ -122,24 +125,23 @@ socket.on('monster-move', function (monsters) {
  firstTime = false;
 });
 
-socket.on('player-move', function(data) {
-	if (data.user_id == user_id) return; // don't care about myself
-	console.log("Some player has moved", data);
-	var myLatlng = new google.maps.LatLng(data.lat, data.lon);
-	if (typeof players[data.user_id] === 'undefined') {
+socket.on('player-move', function(newPlayer) {
+	if (newPlayer.user_id == user_id) return; // don't care about myself
+	console.log("Some player has moved", newPlayer);
+	var myLatlng = new google.maps.LatLng(newPlayer.lat, newPlayer.lon);
+	if (typeof players[newPlayer.user_id] === 'undefined') {
 		console.log("I've never seen this player before.");
-		players[data.user_id] = data;
+		players[newPlayer.user_id] = newPlayer;
 		// add marker
-		players[data.user_id].marker = new google.maps.Marker({
+		players[newPlayer.user_id].marker = new google.maps.Marker({
 		  	position: myLatlng,
 		  	map: map,
 		  	icon: './images/players/user.png'
 		});
 	} else {
-		console.log("I've seen this player before.");
-		players[data.user_id].lat = data.lat;
-		players[data.user_id].lon = data.lon;
-		players[data.user_id].marker.setPosition(myLatlng);
+		players[newPlayer.user_id].lat = newPlayer.lat;
+		players[newPlayer.user_id].lon = newPlayer.lon;
+		players[newPlayer.user_id].marker.setPosition(myLatlng);
 	}
 });
 
