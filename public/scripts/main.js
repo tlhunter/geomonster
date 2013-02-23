@@ -60,7 +60,7 @@ function positionUpdate(position) {
 			title:"You are here.",
 				  icon: './images/players/user.png'
 		});
-		mapMarker.setMap(map);
+		mapMarker.setMap(map);	
 	}
 }
 
@@ -103,6 +103,10 @@ window.onload = function() {
 }
 
 var firstTime = true;
+var infoWindow = new google.maps.InfoWindow(
+{
+}
+);
 socket.on('monster-move', function (monsters) {
 	console.log("Got a monster-move event from the server");
  for(var index in monsters) {
@@ -112,8 +116,15 @@ socket.on('monster-move', function (monsters) {
 		  markers[index] = new google.maps.Marker({
 				position: myLatlng,
 				map: map,
+				title: 'Billy',
 				icon: './images/monsters/' + monster.type + '.png'
 		  });
+		  (function(index){
+			  google.maps.event.addListener(markers[index], 'click', function(asdf) {
+				infoWindow.setContent(markers[index].getTitle());
+				infoWindow.open(map, markers[index]);
+			  });
+		  })(index)
 	  } else {
 			markers[index].setPosition(myLatlng);
 	  }
@@ -124,3 +135,5 @@ socket.on('monster-move', function (monsters) {
 function center() {
 	map.setCenter(mapMarker.getPosition()); 
 }	
+
+
