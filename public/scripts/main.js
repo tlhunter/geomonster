@@ -30,6 +30,7 @@ function getGeoLocation() {
 function positionUpdate(position) {
 	var lat = position.coords.latitude;
 	var lon = position.coords.longitude;
+	console.log("My position has changed to", position.coords.latitude, position.coords.longitude);
 	var latlng = new google.maps.LatLng(lat, lon);
 	if (socket) {
 		socket.emit('location', {
