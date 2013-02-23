@@ -104,6 +104,7 @@ window.onload = function() {
 
 var firstTime = true;
 socket.on('monster-move', function (monsters) {
+	console.log("Got a monster-move event from the server");
  for(var index in monsters) {
 	 var monster = monsters[index];
 	  var myLatlng = new google.maps.LatLng(monster.coords.lat,monster.coords.lon);
