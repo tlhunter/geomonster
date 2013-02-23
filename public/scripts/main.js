@@ -16,7 +16,8 @@ if (!user_id) {
 console.log("My user_id is " + user_id);
 
 var socket = io.connect();
-var markers = [];
+var monster_markers = [];
+var players = {};
 
 function getGeoLocation() {
 	try {
@@ -109,16 +110,37 @@ socket.on('monster-move', function (monsters) {
 	 var monster = monsters[index];
 	  var myLatlng = new google.maps.LatLng(monster.coords.lat,monster.coords.lon);
 	  if(firstTime) {
-		  markers[index] = new google.maps.Marker({
+		  monster_markers[index] = new google.maps.Marker({
 				position: myLatlng,
 				map: map,
 				icon: './images/monsters/' + monster.type + '.png'
 		  });
 	  } else {
-			markers[index].setPosition(myLatlng);
+			monster_markers[index].setPosition(myLatlng);
 	  }
  }
  firstTime = false;
+});
+
+socket.on('player-move', function(data) {
+	if (data.user_id == user_id) return; // don't care about myself
+	console.log("Some player has moved", data);
+	var myLatlng = new google.maps.LatLng(data.lat, data.lon);
+	if (typeof players[data.user_id] === 'undefined') {
+		console.log("I've never seen this player before.");
+		players[data.user_id] = data;
+		// add marker
+		players[data.user_id].marker = new google.maps.Marker({
+		  	position: myLatlng,
+		  	map: map,
+		  	icon: './images/players/user.png'
+		});
+	} else {
+		console.log("I've seen this player before.");
+		players[data.user_id].lat = data.lat;
+		players[data.user_id].lon = data.lon;
+		players[data.user_id].marker.setPosition(myLatlng);
+	}
 });
 
 function center() {

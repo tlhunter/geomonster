@@ -22,6 +22,10 @@ app.get('/all-monsters', function (req, res) {
 	res.send(geomonster.getAllMonsters());
 });
 
+app.get('/all-players', function (req, res) {
+	res.send(geomonster.getAllPlayers());
+});
+
 app.get('/monster-types', function (req, res) {
 	res.send(geomonster.getMonsterTypes());
 });
