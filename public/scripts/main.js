@@ -85,7 +85,7 @@ function positionUpdate(position) {
 		mapMarker = new google.maps.Marker({
 			position: latlng,
 			title: "You are here.",
-			icon: './images/players/user.png'
+		  	icon: './images/players/user' + user_id.charAt(2) +'.png'
 		});
 		mapMarker.setMap(map);	
 	}
@@ -179,7 +179,7 @@ socket.on('player-move', function(newPlayer) {
 		players[newPlayer.user_id].marker = new google.maps.Marker({
 		  	position: myLatlng,
 		  	map: map,
-		  	icon: './images/players/user.png'
+		  	icon: './images/players/user' + newPlayer.user_id.charAt(2) +'.png'
 		});
 	} else {
 		players[newPlayer.user_id].lat = newPlayer.lat;
