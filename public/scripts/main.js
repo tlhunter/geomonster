@@ -8,6 +8,7 @@ var TIMEOUT = 4 * 1000;
 var HIGHACCURACY = true;
 
 var monsterTypes = {};
+var mapIsReady = false;
 
 var user_id = sessionStorage.getItem("user_id");
 if (!user_id) {
@@ -88,6 +89,7 @@ function positionUpdate(position) {
 		});
 		mapMarker.setMap(map);	
 	}
+	mapIsReady = true;
 }
 
 function geo_error(error) {
@@ -123,17 +125,29 @@ function startWatching() {
 }
 
 function destroy(index) {
-	monster_markers[index].setMap(null);
+	socket.emit('monster-kill', {
+		monster_id: index,
+		user_id: user_id
+	});
 }
+
+socket.on('monster-kill', function(data) {
+	monster_markers[data.monster_id].setMap(null);
+	monster_markers[data.monster_id] = null;
+	delete monster_markers[data.monster_id];
+	console.log('MONSTER ' + data.monster_id + ' KILLED BY ' + data.user_id);
+});
 
 var firstTime = true;
 var infoWindow = new google.maps.InfoWindow( { });
 
 socket.on('monster-move', function (monsters) {
-	console.log("Got a monster-move event from the server");
+	if (!mapIsReady) return;
+	console.log("Monster Move Event");
 	var monsters_length = monsters.length;
 	for (var index = 0; index < monsters_length; index++) {
 		(function(index) {
+			if (typeof monsters[index] === 'undefined' || !monsters[index]) return;
 			var monster = monsters[index];
 			var myLatlng = new google.maps.LatLng(monster.coords.lat, monster.coords.lon);
 			if (firstTime) {
