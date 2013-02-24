@@ -39,7 +39,7 @@ $(function() {
 });
 
 var socket = io.connect();
-var monster_markers = []; // Giant array of monsters, keys are simple integers
+var monster_markers = {}; // Giant object of monsters, keys are their unique id
 var players = {}; // object of players, keys are their unique id
 
 function getGeoLocation() {
@@ -144,8 +144,7 @@ var infoWindow = new google.maps.InfoWindow( { });
 socket.on('monster-move', function (monsters) {
 	if (!mapIsReady) return;
 	console.log("Monster Move Event");
-	var monsters_length = monsters.length;
-	for (var index = 0; index < monsters_length; index++) {
+	for (var index in monsters) {
 		(function(index) {
 			if (typeof monsters[index] === 'undefined' || !monsters[index]) return;
 			var monster = monsters[index];
