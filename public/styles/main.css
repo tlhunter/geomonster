@@ -40,3 +40,7 @@ button {
 	right: 10px;
 	color: red;
 }
+#map_canvas h3 {
+	text-align: center;
+	margin: 0px;
+}

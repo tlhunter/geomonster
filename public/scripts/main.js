@@ -72,15 +72,15 @@ function positionUpdate(position) {
 		mapMarker.setPosition(latlng);
 	} else {
 		var myOptions = {
-			zoom: 20,
+			zoom: 18,
 			center: latlng,
-				//disableDoubleClickZoom: true, 
-				disableDefaultUI: true,
-				//draggable: false,
+			disableDoubleClickZoom: true, 
+			disableDefaultUI: true,
+			draggable: false,
+			scrollwheel: false,
 			mapTypeId: google.maps.MapTypeId.ROADMAP
 		};
 		map = new google.maps.Map(document.getElementById("map_canvas"), myOptions);
-		map.setTilt(0); // turns off the annoying default 45-deg view
 
 		mapMarker = new google.maps.Marker({
 			position: latlng,
