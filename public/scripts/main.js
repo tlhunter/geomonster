@@ -121,16 +121,19 @@ $(function() {
 		alert('Geolocation not supported.')
 	}
 });
-
+function destroy(index) {
+	//alert(index);	
+	monster_markers[index].setMap(null);
+}
 var firstTime = true;
 var infoWindow = new google.maps.InfoWindow(
 {
 }
 );
 socket.on('monster-move', function (monsters) {
-	console.log("Got a monster-move event from the server");
+	  console.log("Got a monster-move event from the server");
  for(var index in monsters) {
-	 var monster = monsters[index];
+	  var monster = monsters[index];
 	  var myLatlng = new google.maps.LatLng(monster.coords.lat,monster.coords.lon);
 	  if(firstTime) {
 		  monster_markers[index] = new google.maps.Marker({
@@ -141,7 +144,9 @@ socket.on('monster-move', function (monsters) {
 		  });
 		  (function(index){
 			  google.maps.event.addListener(monster_markers[index], 'click', function(asdf) {
-				infoWindow.setContent(monster_markers[index].getTitle());
+				var contentString = '<h3>' +  monster_markers[index].getTitle() + '</h3>';
+				contentString += '<a onclick="destroy(' + index + ')" href="javascript:void(0);">Attack!</a>';
+				infoWindow.setContent(contentString);
 				infoWindow.open(map, monster_markers[index]);
 			  });
 		  })(index)
@@ -153,7 +158,7 @@ socket.on('monster-move', function (monsters) {
 });
 
 socket.on('player-move', function(newPlayer) {
-	if (newPlayer.user_id == user_id) return; // don't care about myself
+	if (newPlayer.user_id == user_id) return; // don't care about myself -- Tom, you should care about yourself...
 	console.log("Some player has moved", newPlayer);
 	var myLatlng = new google.maps.LatLng(newPlayer.lat, newPlayer.lon);
 	if (typeof players[newPlayer.user_id] === 'undefined') {
