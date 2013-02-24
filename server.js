@@ -6,13 +6,15 @@ var server = require('http').createServer(app)
 var io = require('socket.io').listen(server, { log: false});
 
 var geomonster = require('geomonster');
+var monster_count = parseInt(process.argv[3], 10) || 1000;
+var port_number = parseInt(process.argv[2], 10) || 80;
 
 geomonster
 	.setSockets(io)
-	.initializeMonsterPopulation(1000)
-	.initializeMonsterMovement(parseInt(process.argv[3], 10) || 1000);
+	.initializeMonsterPopulation(monster_count)
+	.initializeMonsterMovement();
 
-server.listen(parseInt(process.argv[2], 10) || 80);
+server.listen(port_number);
 
 app.get('/', function (req, res) {
 	res.sendfile(__dirname + '/public/index.html');

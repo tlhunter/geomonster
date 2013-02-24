@@ -138,7 +138,6 @@ socket.on('monster-kill', function(data) {
 	console.log('MONSTER ' + data.monster_id + ' KILLED BY ' + data.user_id);
 });
 
-var firstTime = true;
 var infoWindow = new google.maps.InfoWindow( { });
 
 socket.on('monster-move', function (monsters) {
@@ -149,7 +148,7 @@ socket.on('monster-move', function (monsters) {
 			if (typeof monsters[index] === 'undefined' || !monsters[index]) return;
 			var monster = monsters[index];
 			var myLatlng = new google.maps.LatLng(monster.coords.lat, monster.coords.lon);
-			if (firstTime) {
+			if (typeof monster_markers[index] == 'undefined') {
 				monster_markers[index] = new google.maps.Marker({
 					position: myLatlng,
 					map: map,
@@ -167,7 +166,6 @@ socket.on('monster-move', function (monsters) {
 			}
 		})(index);
 	}
-	firstTime = false;
 });
 
 socket.on('player-move', function(newPlayer) {
