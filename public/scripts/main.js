@@ -4,7 +4,7 @@ var map;        // google map object
 var mapMarker;  // google map marker object
 // position options
 var MAXIMUM_AGE = 100; // miliseconds
-var TIMEOUT = 300000;
+var TIMEOUT = 4 * 1000;
 var HIGHACCURACY = true;
 
 var monsterTypes = {};
@@ -14,26 +14,32 @@ if (!user_id) {
 	user_id = Math.floor(Math.random() * 900000 + 100000) + ''; // Random 6 digit number
 	sessionStorage.setItem("user_id", user_id);
 }
+
 $(function() {
 	$('#user_id').text(user_id);
+
 	$.ajax({
-	  type: 'GET',
-	  url: './monster-types',
-	  dataType: 'json',
-	  success: function(data){
-	  	monsterTypes = data;
-	  },
-	  error: function(xhr, type){
-		alert('Ajax error!')
-	  }
+		type: 'GET',
+		url: '/monster-types',
+		dataType: 'json',
+		success: function(data) {
+			monsterTypes = data;
+			console.log("Start Watching");
+			if (geo = getGeoLocation()) {
+				startWatching();
+			} else {
+				alert('Geolocation not supported.')
+			}
+		},
+		error: function(xhr, type) {
+			alert('Ajax error!')
+		}
 	});
 });
 
-console.log("My user_id is " + user_id);
-
 var socket = io.connect();
-var monster_markers = [];
-var players = {};
+var monster_markers = []; // Giant array of monsters, keys are simple integers
+var players = {}; // object of players, keys are their unique id
 
 function getGeoLocation() {
 	try {
@@ -56,6 +62,8 @@ function positionUpdate(position) {
 			lon: position.coords.longitude,
 			user_id: user_id,
 		});
+	} else {
+		$('#error_console').text('position before socket');
 	}
 
 	if(map) {
@@ -65,9 +73,9 @@ function positionUpdate(position) {
 		var myOptions = {
 			zoom: 20,
 			center: latlng,
-				  //disableDoubleClickZoom: true, 
-				  disableDefaultUI: true,
-				  //draggable: false,
+				//disableDoubleClickZoom: true, 
+				disableDefaultUI: true,
+				//draggable: false,
 			mapTypeId: google.maps.MapTypeId.ROADMAP
 		};
 		map = new google.maps.Map(document.getElementById("map_canvas"), myOptions);
@@ -75,8 +83,8 @@ function positionUpdate(position) {
 
 		mapMarker = new google.maps.Marker({
 			position: latlng,
-			title:"You are here.",
-				  icon: './images/players/user.png'
+			title: "You are here.",
+			icon: './images/players/user.png'
 		});
 		mapMarker.setMap(map);	
 	}
@@ -84,24 +92,25 @@ function positionUpdate(position) {
 
 function geo_error(error) {
 	stopWatching();
+	$error_console = $('#error_console');
 	switch(error.code) {
 		case error.TIMEOUT:
-			alert('Geolocation Timeout');
+			$error_console.text('Geolocation Timeout');
 			break;
 		case error.POSITION_UNAVAILABLE:
-			alert('Geolocation Position unavailable');
+			$error_console.text('Geolocation Position unavailable');
 			break;
 		case error.PERMISSION_DENIED:
-			alert('Geolocation Permission denied');
+			$error_console.text('Geolocation Permission denied');
 			break;
 		default:
-			alert('Geolocation returned an unknown error code: ' + error.code);
+			$error_console.text('Geolocation returned an unknown error code: ' + error.code);
 	}
 }
 
 function stopWatching() {
 	console.log("Stop Watching");
-	if(watchID) geo.clearWatch(watchID);
+	if (watchID) geo.clearWatch(watchID);
 	watchID = null;
 }
 
@@ -113,48 +122,39 @@ function startWatching() {
 	});
 }
 
-$(function() {
-	console.log("Start Watching");
-	if (geo = getGeoLocation()) {
-		startWatching();
-	} else {
-		alert('Geolocation not supported.')
-	}
-});
 function destroy(index) {
-	//alert(index);	
 	monster_markers[index].setMap(null);
 }
+
 var firstTime = true;
-var infoWindow = new google.maps.InfoWindow(
-{
-}
-);
+var infoWindow = new google.maps.InfoWindow( { });
+
 socket.on('monster-move', function (monsters) {
-	  console.log("Got a monster-move event from the server");
- for(var index in monsters) {
-	  var monster = monsters[index];
-	  var myLatlng = new google.maps.LatLng(monster.coords.lat,monster.coords.lon);
-	  if(firstTime) {
-		  monster_markers[index] = new google.maps.Marker({
-				position: myLatlng,
-				map: map,
-				title: monsterTypes[monster.type].name,
-				icon: './images/monsters/' + monster.type + '.png'
-		  });
-		  (function(index){
-			  google.maps.event.addListener(monster_markers[index], 'click', function(asdf) {
-				var contentString = '<h3>' +  monster_markers[index].getTitle() + '</h3>';
-				contentString += '<a onclick="destroy(' + index + ')" href="javascript:void(0);">Attack!</a>';
-				infoWindow.setContent(contentString);
-				infoWindow.open(map, monster_markers[index]);
-			  });
-		  })(index)
-	  } else {
-			monster_markers[index].setPosition(myLatlng);
-	  }
- }
- firstTime = false;
+	console.log("Got a monster-move event from the server");
+	var monsters_length = monsters.length;
+	for (var index = 0; index < monsters_length; index++) {
+		(function(index) {
+			var monster = monsters[index];
+			var myLatlng = new google.maps.LatLng(monster.coords.lat, monster.coords.lon);
+			if (firstTime) {
+				monster_markers[index] = new google.maps.Marker({
+					position: myLatlng,
+					map: map,
+					title: monsterTypes[monster.type].name,
+					icon: './images/monsters/' + monster.type + '.png'
+				});
+				google.maps.event.addListener(monster_markers[index], 'click', function() {
+					var contentString = '<h3>' +  monster_markers[index].getTitle() + '</h3>';
+					contentString += '<a onclick="destroy(' + index + ')" href="javascript:void(0);">Attack!</a>';
+					infoWindow.setContent(contentString);
+					infoWindow.open(map, monster_markers[index]);
+				});
+			} else {
+				monster_markers[index].setPosition(myLatlng);
+			}
+		})(index);
+	}
+	firstTime = false;
 });
 
 socket.on('player-move', function(newPlayer) {

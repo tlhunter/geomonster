@@ -16,23 +16,27 @@ button {
 	right: 10px;
 	z-index: 99999;
 }
-#user_id {
+.bubble {
 	position: absolute;
+	z-index: 99999;
+	background-color: black;
+	color: white;
+	font-size: 13px;
+	padding: 4px;
+	font-family: sans-serif;
+	border-radius: 6px;
+	opacity: 0.75;
+}
+#user_id {
 	top: 10px;
 	left: 10px;
-	z-index: 99999;
-	background-color: white;
-	padding: 4px;
-	font-family: sans-serif;
-	border-radius: 4px;
 }
 #position {
-	position: absolute;
 	bottom: 10px;
 	left: 10px;
-	z-index: 99999;
-	background-color: white;
-	padding: 4px;
-	font-family: sans-serif;
-	border-radius: 4px;
+}
+#error_console {
+	bottom: 10px;
+	right: 10px;
+	color: red;
 }
