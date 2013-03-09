@@ -18,27 +18,73 @@ const (
 	MONSTER_EXPIRATION = 60 * 60 * 12 // Seconds
 )
 
+/**
+ * Latitude and Longitude pair
+ */
+type Location struct {
+	lat float32 // Latitude
+	lon float32 // Longitude
+}
+
+/**
+ * Information about a player
+ */
 type Player struct {
 	id int
-	lat float64
-	lon float64
+	loc Location
 }
 
+/**
+ * A slice of all the players
+ */
+var players []Player
+
+/**
+ * Information about a monster
+ */
 type Monster struct {
 	id int
-	lat float64
-	long float64
-	mtype int
-	level int
-	exp int
-	persist bool
-	last_seen int // Time
-	created int // Time
+	loc Location
+	mtype int32 // Monster Type
+	level int32 // Monster Level (some equation to go from EXP to LVL)
+	exp int64 // Monster EXP
+	persist bool // Should we keep this monster around even if he hasn't been seen in a while
+	last_seen int32 // Time
+	created int32 // Time
 }
 
+/**
+ * A slice of all the monsters
+ */
+var monsters []Monster
+
 func main() {
+	// Setup TCP Socket
+	// Setup event intervals
+	// Load monsters from disk?
+
+	harryTheMonster := Monster{
+		id:1,
+		loc: Location{
+			lat: 10.0,
+			lon: 10.0,
+		},
+		mtype: 100,
+		level: 30,
+		exp: 3200,
+		persist: true,
+		last_seen: int32(time.Now().Unix()),
+		created: int32(time.Now().Unix()),
+	}
+
+	monsters = append(monsters, harryTheMonster)
+	monsters = append(monsters, harryTheMonster)
+	monsters = append(monsters, harryTheMonster)
+
 	fmt.Println("Hello, 世界")
 	fmt.Println(int32(time.Now().Unix()))
+
+	fmt.Println(monsters)
 }
 
 // Information about a player has been updated
@@ -58,6 +104,11 @@ func input_add_monster() {
 
 // A monster should be removed from our list
 func input_remove_monster() {
+
+}
+
+// Kill the server. Might want to persist monsters to disk?
+func input_kill_server() {
 
 }
 
