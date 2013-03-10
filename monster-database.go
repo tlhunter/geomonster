@@ -8,8 +8,13 @@
  */
 package main
 
-import "fmt"
-import "time"
+import (
+	"fmt"
+	"time"
+	"encoding/json"
+	"os"
+	"net"
+)
 
 const (
 	MAX_MONSTERS = 100000 // Upper limit of monsters to have in the world
@@ -30,7 +35,7 @@ type Location struct {
  * Information about a player
  */
 type Player struct {
-	id int
+	id uint
 	loc Location
 }
 
@@ -43,14 +48,14 @@ var players []Player
  * Information about a monster
  */
 type Monster struct {
-	id int
+	id uint
 	loc Location
-	mtype int32 // Monster Type
-	level int32 // Monster Level (some equation to go from EXP to LVL)
-	exp int64 // Monster EXP
+	mtype uint32 // Monster Type
+	level uint32 // Monster Level (some equation to go from EXP to LVL)
+	exp uint64 // Monster EXP
 	persist bool // Should we keep this monster around even if he hasn't been seen in a while
-	last_seen int32 // Time
-	created int32 // Time
+	last_seen int64 // Time
+	created int64 // Time
 }
 
 /**
@@ -59,12 +64,27 @@ type Monster struct {
 var monsters []Monster
 
 func main() {
+	listener, err := net.Listen("tcp", "0.0.0.0:6666")
+
+	if err != nil {
+		println("error listening:", err.Error())
+		os.Exit(1)
+	}
+
+	for {
+		conn, err := listener.Accept()
+		if err != nil {
+			println("Error accept:", err.Error())
+			return
+		}
+		go EchoFunc(conn)
+	}
 	// Setup TCP Socket
 	// Setup event intervals
 	// Load monsters from disk?
 
 	harryTheMonster := Monster{
-		id:1,
+		id: 1,
 		loc: Location{
 			lat: 10.0,
 			lon: 10.0,
@@ -73,8 +93,8 @@ func main() {
 		level: 30,
 		exp: 3200,
 		persist: true,
-		last_seen: int32(time.Now().Unix()),
-		created: int32(time.Now().Unix()),
+		last_seen: time.Now().Unix(),
+		created: time.Now().Unix(),
 	}
 
 	monsters = append(monsters, harryTheMonster)
@@ -82,9 +102,31 @@ func main() {
 	monsters = append(monsters, harryTheMonster)
 
 	fmt.Println("Hello, 世界")
-	fmt.Println(int32(time.Now().Unix()))
+	fmt.Println(uint32(time.Now().Unix()))
 
-	fmt.Println(monsters)
+	b, err := json.Marshal(monsters)
+	if err != nil {
+		fmt.Println("error:", err)
+	}
+	fmt.Println(b)
+}
+
+func EchoFunc(conn net.Conn) {
+	buf := make([]byte, 1024)
+	n, err := conn.Read(buf)
+	if err != nil {
+		println("Error reading:", err.Error())
+		return
+	}
+	println("received ", n, " bytes of data =", string(buf))
+
+	//send reply
+	_, err = conn.Write(buf)
+	if err != nil {
+		println("Error send reply:", err.Error())
+	}else {
+		println("Reply sent")
+	}
 }
 
 // Information about a player has been updated
