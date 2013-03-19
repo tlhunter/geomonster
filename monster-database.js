@@ -21,7 +21,35 @@ var LISTEN_PORT 				= parseInt(process.argv[2], 10) || 12030;
 var LISTEN_ADDRESS				= '127.0.0.1'; // only allow local with '127.0.0.1', or use null for anything
 
 var monsters 					= [];
+var monster_count				= 0;
 var players 					= [];
+var player_count				= 0;
+
+// Example Player Object
+var player = {
+	"name": "Nucleocide",
+	"id": 5000,
+	"pos": {
+		"lat": 100,
+		"lon": 80
+	},
+	"last_seen": new Date(),
+};
+
+// Example Monster Object
+var monster = {
+	"id": 2000,
+	"pos": {
+		"lat": 80,
+		"lon": 100
+	},
+	"level": 2,
+	"type": 5,
+	"exp": 100,
+	"last_seen": new Date(),
+	"created": new Date(),
+	"persist": true
+};
 
 var server = net.createServer(function (socket) {
 	console.log('CLIENT CONNECTED');
@@ -49,26 +77,90 @@ var server = net.createServer(function (socket) {
 	var monsterDatabase = {
 		// Information about a player has been updated. Could be thought of as an add or update (UPSERT?!)
 		input_player: function(data) {
+			if (!data.id) {
+				socket.write('Player needs ID\r\n');
+				console.log("Got a player object but had had no ID.");
+				return;
+			}
 
+			if (typeof(players[data.id]) == "undefined") {
+				if (typeof data.name == 'undefined' || typeof data.name == 'undefined' || typeof data.name == 'undefined' || typeof data.name == 'undefined') {
+					socket.write('BAD - MISSING DATA\r\n');
+					console.log("Got player info for the first time but it was missing stuff.");
+					return;
+				}
+
+				players[data.id] = {
+					name: data.name,
+					id: data.id,
+					pos: {
+						lat: data.pos.lat,
+						lon: data.pos.lon,
+					},
+					last_seen: new Date(),
+				};
+
+				player_count++;
+
+				console.log("Got a new player", data);
+				socket.write('OK - NEW PLAYER\r\n');
+			} else {
+				var player = players[data.id];
+
+				if (typeof data.name != 'undefined') player.name = data.name;
+				if (typeof data.pos != 'undefined' && typeof data.pos.lat != 'undefined' && typeof data.pos.lon != 'undefined') {
+					player.pos.lat = data.pos.lat;
+					player.pos.lon = data.pos.lon;
+				}
+				player.last_seen = new Date();
+				console.log("Updated a player", data);
+				socket.write('OK - EDIT PLAYER\r\n');
+			}
 		},
 
 		// A player should be removed from our list
 		input_player_remove: function(data) {
+			if (!data.id) {
+				socket.write('Player needs ID\r\n');
+				console.log("Got a player object but had had no ID.");
+				return;
+			}
 
+			if (typeof players[data.id] !== 'undefined') {
+				delete players[data.id];
+				player_count--;
+				socket.write('OK - DELETED\r\n');
+			} else {
+				socket.write('OK - NOBODY\r\n');
+			}
 		},
 
 		// The server is manually adding a monster, possibly for an event or a company special
-		input_add_monster: function(data) {
+		input_monster: function(data) {
+			if (!data.id) {
+			}
 
+			// this may happen
+			monster_count++;
 		},
 
 		input_remove_monster: function(data) {
+			if (typeof monsters[data.id] == 'undefined') {
+				console.log("Asked to delete an inexistant monster");
+				socket.write('WTF - NOMONSTER');
+				return;
+			}
+
 			monsterDatabase.output_monster_remove(data.id);
+
+			delete monsters[data.id];
+			monster_count--;
 		},
 
 		input_kill_server: function(data) {
 			// Persist monster database to redis or a big JSON file or something
 			socket.end();
+			console.log("You just massacred " + player_count + " players and " + monster_count + " monsters!");
 			process.exit();
 		},
 
@@ -109,9 +201,9 @@ var server = net.createServer(function (socket) {
 				console.log("PLAYER REMOVE EVENT");
 				monsterDatabase.input_player_remove(data.data);
 				break;
-			case "monster-add":
-				console.log("MONSTER ADD EVENT");
-				monsterDatabase.input_add_monster(data.data);
+			case "monster":
+				console.log("MONSTER EVENT");
+				monsterDatabase.input_monster(data.data);
 				break;
 			case "monster-remove":
 				console.log("MONSTER REMOVE EVENT");
@@ -126,4 +218,9 @@ var server = net.createServer(function (socket) {
 
 }).listen(LISTEN_PORT, LISTEN_ADDRESS, function() {
 	console.log("LISTENING ON " + LISTEN_ADDRESS + ":" + LISTEN_PORT);
+}).on('error', function (e) {
+	if (e.code == 'EADDRINUSE') {
+		console.log("Address is already in use. Is Monster Database running twice?");
+		process.exit();
+	}
 });
