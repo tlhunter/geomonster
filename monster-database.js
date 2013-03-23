@@ -25,58 +25,63 @@ var monster_count				= 0;
 var players 					= [];
 var player_count				= 0;
 
-// Example Player Object
-var player = {
-	"name": "Nucleocide",
-	"id": 5000,
-	"pos": {
-		"lat": 100,
-		"lon": 80
-	},
-	"last_seen": new Date(),
+var server 						= net.createServer();
+var sockets						= []; // an array of socket connections
+
+// Sends a message to every single socket
+var messageAllSockets = function(message) {
+	sockets.forEach(function(socket) {
+		socket.write(message + '\r\n');
+	});
 };
 
-// Example Monster Object
-var monster = {
-	"id": 2000,
-	"pos": {
-		"lat": 80,
-		"lon": 100
-	},
-	"level": 2,
-	"type": 5,
-	"exp": 100,
-	"last_seen": new Date(),
-	"created": new Date(),
-	"persist": true
-};
-
-var server = net.createServer(function (socket) {
-	console.log('CLIENT CONNECTED');
-	socket.write('MONSTER DATABASE\r\n');
-
-	socket.on('data', function(raw_data) {
-		try {
-			var data = JSON.parse(raw_data);
-			if (typeof data.event == "undefined" || typeof data.data == "undefined") {
-				console.log("bad data", data);
-				throw new Error();
-			}
-			handleMessage(data, socket);
-		} catch (e) {
-			socket.write('ERROR PARSING JSON MESSAGE. Must have a .event and .data.\r\n');
-			console.log("Received an unparseable message from the client:");
-			console.log(raw_data.toString());
+// Disconnectes every socket
+var killAllSockets = function(message) {
+	sockets.forEach(function(socket) {
+		if (typeof message !== 'undefined') {
+			socket.write(message + '\r\n');
 		}
-	});
 
-	socket.on('end', function() {
-		console.log('CLIENT DISCONNECTED');
+		socket.end();
+		delete sockets[socket];
 	});
+};
 
-	var monsterDatabase = {
-		// Information about a player has been updated. Could be thought of as an add or update (UPSERT?!)
-		input_player: function(data) {
+// Removes a socket from our pool
+var disconnectSocket = function(socket) {
+	delete sockets[socket];
+};
+
+//// Example Player Object
+//var player = {
+	//"name": "Nucleocide",
+	//"id": 5000,
+	//"pos": {
+		//"lat": 100,
+		//"lon": 80
+	//},
+	//"last_seen": new Date(),
+//};
+
+//// Example Monster Object
+//var monster = {
+	//"id": 2000,
+	//"pos": {
+		//"lat": 80,
+		//"lon": 100
+	//},
+	//"level": 2,
+	//"type": 5,
+	//"exp": 100,
+	//"last_seen": new Date(),
+	//"created": new Date(),
+	//"persist": true
+//};
+
+var monsterDatabase = {
+	// Information about a player has been updated. Could be thought of as an add or update (UPSERT?!)
+	input: {
+		player: function(data, socket) {
 			if (!data.id) {
 				socket.write('Player needs ID\r\n');
 				console.log("Got a player object but had had no ID.");
@@ -119,7 +124,7 @@ var server = net.createServer(function (socket) {
 		},
 
 		// A player should be removed from our list
-		input_player_remove: function(data) {
+		player_remove: function(data, socket) {
 			if (!data.id) {
 				socket.write('Player needs ID\r\n');
 				console.log("Got a player object but had had no ID.");
@@ -136,7 +141,7 @@ var server = net.createServer(function (socket) {
 		},
 
 		// The server is manually adding a monster, possibly for an event or a company special
-		input_monster: function(data) {
+		monster: function(data, socket) {
 			if (!data.id) {
 			}
 
@@ -144,83 +149,120 @@ var server = net.createServer(function (socket) {
 			monster_count++;
 		},
 
-		input_remove_monster: function(data) {
+		remove_monster: function(data, socket) {
 			if (typeof monsters[data.id] == 'undefined') {
 				console.log("Asked to delete an inexistant monster");
 				socket.write('WTF - NOMONSTER');
 				return;
 			}
 
-			monsterDatabase.output_monster_remove(data.id);
+			monsterDatabase.output.monster_remove(data.id);
 
 			delete monsters[data.id];
 			monster_count--;
 		},
 
-		input_kill_server: function(data) {
+		kill_server: function(data) {
 			// Persist monster database to redis or a big JSON file or something
-			socket.end();
+			killAllSockets('CLIENT KILLED SERVER');
 			console.log("You just massacred " + player_count + " players and " + monster_count + " monsters!");
 			process.exit();
 		},
+	},
 
+	event: {
 		// Iterate through each monster, deleting them if LAST_SEEN > 12 hours AND !persist
-		event_delete_old_monsters: function() {
+		delete_old_monsters: function() {
 
 		},
 
 		// Iterate through each monster, incrementing their exp by one point, increasing level if applicable
-		event_monster_experience: function() {
+		monster_experience: function() {
 
 		},
 
 		// Iterate through each monster, moving them slightly
-		event_monster_movement: function() {
+		monster_movement: function() {
 
 		},
+	},
 
+	broadcast: {
 		// Send the information about a monster to the other server, aka their position or level probably changed
-		output_monster_info: function(id) {
+		monster_info: function(id) {
 
 		},
 
 		// Send the information about a monster being removed to the other server
-		output_monster_remove: function(id) {
+		monster_remove: function(id) {
 			delete monsters[id];
 			// Send message to all nearby players
 		},
-	};
+	}
+};
 
-	function handleMessage(data) {
-		switch (data.event) {
-			case "player":
-				console.log("PLAYER EVENT");
-				monsterDatabase.input_player(data.data);
-				break;
-			case "player-remove":
-				console.log("PLAYER REMOVE EVENT");
-				monsterDatabase.input_player_remove(data.data);
-				break;
-			case "monster":
-				console.log("MONSTER EVENT");
-				monsterDatabase.input_monster(data.data);
-				break;
-			case "monster-remove":
-				console.log("MONSTER REMOVE EVENT");
-				monsterDatabase.input_remove_monster(data.data);
-				break;
-			case "server-kill":
-				console.log("SERVER KILL EVENT");
-				monsterDatabase.input_kill_server(data.data);
-				break;
+server.on('connection', function (socket) {
+	console.log('CLIENT CONNECTED');
+	socket.write('MONSTER DATABASE\r\n');
+
+	sockets.push(socket);
+
+	socket.on('data', function(raw_data) {
+		try {
+			var data = JSON.parse(raw_data);
+
+			if (typeof data.event == "undefined" || typeof data.data == "undefined") {
+				console.log("bad data", data);
+				throw new Error();
+			}
+
+			switch (data.event) {
+				case "player":
+					console.log("PLAYER EVENT");
+					monsterDatabase.input.player(data.data, socket);
+					break;
+				case "player-remove":
+					console.log("PLAYER REMOVE EVENT");
+					monsterDatabase.input.player_remove(data.data, socket);
+					break;
+				case "monster":
+					console.log("MONSTER EVENT");
+					monsterDatabase.input.monster(data.data, socket);
+					break;
+				case "monster-remove":
+					console.log("MONSTER REMOVE EVENT");
+					monsterDatabase.input.remove_monster(data.data, socket);
+					break;
+				case "server-kill":
+					console.log("SERVER KILL EVENT");
+					monsterDatabase.input.kill_server(data.data, socket);
+					break;
+			}
+		} catch (e) {
+			socket.write('ERROR PARSING JSON MESSAGE. Must have a .event and .data.\r\n');
+			console.log("Received an unparseable message from the client:");
+			console.log(raw_data.toString());
 		}
-	};
+	});
 
-}).listen(LISTEN_PORT, LISTEN_ADDRESS, function() {
-	console.log("LISTENING ON " + LISTEN_ADDRESS + ":" + LISTEN_PORT);
-}).on('error', function (e) {
+	socket.on('end', function(socket) {
+		disconnectSocket(socket);
+		console.log('CLIENT DISCONNECTED');
+	});
+});
+
+server.on('error', function (e) {
+	killAllSockets('SERVER ERROR');
+
 	if (e.code == 'EADDRINUSE') {
 		console.log("Address is already in use. Is Monster Database running twice?");
 		process.exit();
 	}
+
+	console.log("There was an error starting the TCP server. Exiting.");
+	process.exit();
+});
+
+server.listen(LISTEN_PORT, LISTEN_ADDRESS, function() {
+	console.log("LISTENING ON " + LISTEN_ADDRESS + ":" + LISTEN_PORT);
 });
